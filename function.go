@@ -2,7 +2,33 @@ package mysqlib
 
 import (
 	"strconv"
+	"strings"
 )
+
+//过滤SQL敏感字符
+func filterSQL(v string) string {
+	// 判断 "
+	n := strings.Count(v, "\"")
+	if n%2 != 0 {
+		v = strings.Replace(v, "\"", "\"\"", 1)
+	}
+	// 判断 '
+	n = strings.Count(v, "'")
+	if n%2 != 0 {
+		v = strings.Replace(v, "'", "''", 1)
+	}
+	// 判断 `
+	n = strings.Count(v, "`")
+	if n%2 != 0 {
+		v = strings.Replace(v, "`", "``", 1)
+	}
+	// 判断 \
+	v = strings.Replace(v, "\\", "\\\\", -1)
+	// 判断 --
+	v = strings.Replace(v, "--", "---", -1)
+
+	return v
+}
 
 //将interface{}类型的参数断言并转换成string以用于拼接sql语句
 func interfaceToString(v interface{}) string {

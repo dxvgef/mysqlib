@@ -90,32 +90,3 @@ func (sess *Session) reflectModel(modelName string) *modelInfo {
 
 	return &info
 }
-
-//过滤SQL敏感字符
-func filterSQL(s string) string {
-	// insertString
-	var insertString = func(s string, index int, new string) string {
-		s1 := s[:index]
-		s2 := s[index:]
-		return s1 + new + s2
-	}
-	// 双引号
-	a := strings.Count(s, "\"")
-	if a%2 != 0 {
-		i := strings.Index(s, "\"")
-		s = insertString(s, i, "\"")
-	}
-	// 单引号
-	b := strings.Count(s, "'")
-	if b%2 != 0 {
-		i := strings.Index(s, "'")
-		s = insertString(s, i, "'")
-	}
-	// 反引号
-	c := strings.Count(s, "`")
-	if c%2 != 0 {
-		i := strings.Index(s, "`")
-		s = insertString(s, i, "`")
-	}
-	return "'" + s + "'"
-}

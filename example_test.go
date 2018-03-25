@@ -55,7 +55,7 @@ func TestConnect(t *testing.T) {
 	//}
 }
 
-// TestInsert 测试构建INSERT语句并操作数据库
+// TestInsert 测试构建INSERT语句
 func TestInsert(t *testing.T) {
 	// 实例化一个模型并赋值，用于写入到数据库
 	var user User
@@ -95,7 +95,7 @@ func TestInsert(t *testing.T) {
 	//t.Log("受影响的行数：", count)
 }
 
-// 测试构建UPDATE语句并用事务进行查询
+// 测试构建UPDATE语句
 func TestUpdate(t *testing.T) {
 	var user User
 	user.Username = "abc"
@@ -132,7 +132,7 @@ func TestUpdate(t *testing.T) {
 	//t.Log("受影响的行数：", count)
 }
 
-// TestSelect 测试构建SELECT语句并执行
+// TestSelect 测试构建SELECT语句
 func TestSelect(t *testing.T) {
 	var user User
 	sqlSess, err := mysql.Model(&user).Select().
@@ -168,7 +168,7 @@ func TestSelect(t *testing.T) {
 	//t.Log(user.Username)
 }
 
-// TestSelectMultiple 测试查询多条记录
+// TestSelectMultiple 测试通过模型slice查询多条记录
 func TestSelectMultiple(t *testing.T) {
 	// 注意这里定义的是模型的slice
 	var users []User
@@ -206,7 +206,7 @@ func TestSelectMultiple(t *testing.T) {
 	//}
 }
 
-// TestDelete 测试构建DELETE语句并执行
+// TestDelete 测试构建DELETE语句
 func TestDelete(t *testing.T) {
 	// 使用空实例做模型
 	sqlSess, err := mysql.Model(&User{}).Delete().
