@@ -42,11 +42,42 @@ func New(option ...*Options) *Instance {
 	return &instance
 }
 
-// Model 通过传入的模型创建会话实例Session
-func (instance *Instance) Model(m interface{}) *Session {
+// Insert 设置本次会话的行为是INSET操作
+func (instance *Instance) Insert(m interface{}) *Session {
 	//创建会话
 	var sess Session
 	sess.builder = instance   //存入构建器指针
 	sess.modelValue.Value = m //存入模型实例
+	sess.stmt.action = "INSERT"
+	return &sess
+}
+
+// Update 设置会话的行为是UPDATE操作
+func (instance *Instance) Update(m interface{}) *Session {
+	//创建会话
+	var sess Session
+	sess.builder = instance   //存入构建器指针
+	sess.modelValue.Value = m //存入模型实例
+	sess.stmt.action = "UPDATE"
+	return &sess
+}
+
+// Select 设置会话的行为是SELECT操作
+func (instance *Instance) Select(m interface{}) *Session {
+	//创建会话
+	var sess Session
+	sess.builder = instance   //存入构建器指针
+	sess.modelValue.Value = m //存入模型实例
+	sess.stmt.action = "SELECT"
+	return &sess
+}
+
+// Delete 设置会话的行为是DELETE操作
+func (instance *Instance) Delete(m interface{}) *Session {
+	//创建会话
+	var sess Session
+	sess.builder = instance   //存入构建器指针
+	sess.modelValue.Value = m //存入模型实例
+	sess.stmt.action = "DELETE"
 	return &sess
 }

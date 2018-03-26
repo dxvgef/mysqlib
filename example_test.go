@@ -65,7 +65,7 @@ func TestInsert(t *testing.T) {
 	// 使用user实例做为模型，构建INSERT语句
 	// 执行Build()时会构建最终的SQL语句，入参值为false时构建带?占位符的模板语句
 	// Build会返回一个会话实例sqlSess
-	sqlSess, err := mysql.Model(&user).Insert().Build(false)
+	sqlSess, err := mysql.Insert(&user).Build(false)
 	if err != nil {
 		t.Error(err.Error())
 		return
@@ -100,7 +100,7 @@ func TestUpdate(t *testing.T) {
 	var user User
 	user.Username = "abc"
 
-	sqlSess, err := mysql.Model(&user).Update().
+	sqlSess, err := mysql.Update(&user).
 		// 使用Column()指定要更新哪些字段
 		// 注意：出于安全考虑，如果不指定要更新哪些字段，Build()不会构建SQL语句
 		Column("username").
@@ -135,7 +135,7 @@ func TestUpdate(t *testing.T) {
 // TestSelect 测试构建SELECT语句
 func TestSelect(t *testing.T) {
 	var user User
-	sqlSess, err := mysql.Model(&user).Select().
+	sqlSess, err := mysql.Select(&user).
 		Column("username").
 		Where("id", "=", 1).
 		Limit(1).
@@ -172,7 +172,7 @@ func TestSelect(t *testing.T) {
 func TestSelectMultiple(t *testing.T) {
 	// 注意这里定义的是模型的slice
 	var users []User
-	sqlSess, err := mysql.Model(&users).Select().
+	sqlSess, err := mysql.Select(&users).
 		Build(false)
 	if err != nil {
 		t.Error(err.Error())
@@ -209,7 +209,7 @@ func TestSelectMultiple(t *testing.T) {
 // TestDelete 测试构建DELETE语句
 func TestDelete(t *testing.T) {
 	// 使用空实例做模型
-	sqlSess, err := mysql.Model(&User{}).Delete().
+	sqlSess, err := mysql.Delete(&User{}).
 		Where("id", "=", 1).
 		Build(false)
 	if err != nil {

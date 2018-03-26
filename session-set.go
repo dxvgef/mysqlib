@@ -12,30 +12,6 @@ func (sess *Session) Table(tableName string) *Session {
 	return sess
 }
 
-// Insert 设置本次会话的行为是INSET操作
-func (sess *Session) Insert() *Session {
-	sess.stmt.action = "INSERT"
-	return sess
-}
-
-// Update 设置会话的行为是UPDATE操作
-func (sess *Session) Update() *Session {
-	sess.stmt.action = "UPDATE"
-	return sess
-}
-
-// Select 设置会话的行为是SELECT操作
-func (sess *Session) Select() *Session {
-	sess.stmt.action = "SELECT"
-	return sess
-}
-
-// Delete 设置会话的行为是DELETE操作
-func (sess *Session) Delete() *Session {
-	sess.stmt.action = "DELETE"
-	return sess
-}
-
 // Column 要影响的字段，作用于以下操作：
 // INSERT：只插入哪些字段
 // UPDATE：只更新哪些字段
