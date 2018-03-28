@@ -2,7 +2,6 @@ package mysqlib
 
 import (
 	"reflect"
-	"strings"
 )
 
 //解析模型结构
