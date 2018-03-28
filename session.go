@@ -17,9 +17,9 @@ type Session struct {
 	tableName string //临时作用于本次会话的表名
 	//sql语句的结构
 	stmt struct {
-		action       string          //行为（insert、update、select、delete）
-		field        []*keyInterface //INSERT/UPDATE要影响的字段(sql)及其值
-		extraField   []*keyInterface //INSERT/UPDATE要影响的字段(sql)及其值
+		action       string          //行为
+		field        []*keyInterface //INSERT/UPDATE要从模型中取值的字段
+		addValue     []*keyInterface //INSERT/UPDATE要写值到模型外的字段及其值
 		where        []*whereCond    //where条件
 		orders       []*orderBy
 		limit        int

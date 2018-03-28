@@ -36,7 +36,11 @@ func (sess *Session) Build(final bool) (*Session, error) {
 	case "INSERT":
 		stmt.WriteString(sess.buildInsert(final))
 	case "UPDATE":
-		stmt.WriteString(sess.buildUpdate(final))
+		value := sess.buildUpdate(final)
+		if value == "" {
+			return nil, errors.New("为了安全，`UPDATE`操作必须使用`Column()`方法指定要更新的字段")
+		}
+		stmt.WriteString(value)
 		//拼接where语句
 		stmt.WriteString(sess.buildWhere(final))
 		//拼接order by语句
@@ -79,11 +83,11 @@ func (sess *Session) buildInsert(final bool) string {
 	stmt.WriteString(sess.tableName)
 	stmt.WriteString("` (")
 
-	var allField []keyString
+	var allField []keyInterface
 
 	// ------------------ 拼接column部分 ----------------------------
 	// 如果没有用Column()指定field
-	var field keyString
+	var field keyInterface
 	if len(sess.stmt.field) == 0 {
 		//把模型里所有的字段及其值写入到allField里
 		for _, v := range sess.modelInfo.fields {
@@ -92,9 +96,7 @@ func (sess *Session) buildInsert(final bool) string {
 				sess.stmt.resultValues = append(sess.stmt.resultValues, value)
 			}
 			field.key = v.SQLName
-			field.value = interfaceToString(value)
-			//sess.stmt.field = append(sess.stmt.field, &field)
-			//将k/v插入到allField
+			field.value = value
 			allField = append(allField, field)
 		}
 	} else {
@@ -105,18 +107,18 @@ func (sess *Session) buildInsert(final bool) string {
 				sess.stmt.resultValues = append(sess.stmt.resultValues, value)
 			}
 			field.key = sqlName.key
-			field.value = interfaceToString(value)
+			field.value = value
 			allField = append(allField, field)
 		}
 	}
 
 	//把额外添加的字段也汇总到allField
-	for _, v := range sess.stmt.extraField {
+	for _, v := range sess.stmt.addValue {
 		if final == false {
 			sess.stmt.resultValues = append(sess.stmt.resultValues, v.value)
 		}
 		field.key = v.key
-		field.value = interfaceToString(v.value)
+		field.value = v.value
 		allField = append(allField, field)
 	}
 
@@ -140,11 +142,24 @@ func (sess *Session) buildInsert(final bool) string {
 	//遍历开始拼接参数值
 	if final == true {
 		for k, v := range allField {
+			value, ok := v.value.(string)
 			if k == 0 {
-				stmt.WriteString(v.value)
+				if ok == true {
+					stmt.WriteString("'")
+					stmt.WriteString(value)
+					stmt.WriteString("'")
+				} else {
+					stmt.WriteString(interfaceToString(v.value))
+				}
 			} else {
-				stmt.WriteString(", ")
-				stmt.WriteString(v.value)
+				if ok == true {
+					stmt.WriteString(", '")
+					stmt.WriteString(value)
+					stmt.WriteString("'")
+				} else {
+					stmt.WriteString(", ")
+					stmt.WriteString(interfaceToString(v.value))
+				}
 			}
 		}
 	} else {
@@ -170,10 +185,10 @@ func (sess *Session) buildUpdate(final bool) string {
 	stmt.WriteString(sess.tableName)
 	stmt.WriteString("` SET ")
 
-	var allField []keyString
+	var allField []keyInterface
 
 	// ------------------ 拼接SET部分 ----------------------------
-	var field keyString
+	var field keyInterface
 	//遍历Column
 	for _, sqlName := range sess.stmt.field {
 		value := sess.modelValue.rValue.FieldByName(sess.modelInfo.fields[sqlName.key].VarName).Interface()
@@ -181,32 +196,52 @@ func (sess *Session) buildUpdate(final bool) string {
 			sess.stmt.resultValues = append(sess.stmt.resultValues, value)
 		}
 		field.key = sqlName.key
-		field.value = interfaceToString(value)
+		field.value = value
 		allField = append(allField, field)
 	}
 
 	//把额外添加的字段也汇总到allField
-	for _, v := range sess.stmt.extraField {
+	for _, v := range sess.stmt.addValue {
 		if final == false {
 			sess.stmt.resultValues = append(sess.stmt.resultValues, v.value)
 		}
 		field.key = v.key
-		field.value = interfaceToString(v.value)
+		field.value = v.value
 		allField = append(allField, field)
+	}
+	if len(allField) == 0 {
+		return ""
 	}
 	// 拼接set语句
 	for k, v := range allField {
+		value, ok := v.value.(string)
 		if final == true {
 			if k == 0 {
-				stmt.WriteString("`")
-				stmt.WriteString(v.key)
-				stmt.WriteString("`=")
-				stmt.WriteString(v.value)
+				if ok == true {
+					stmt.WriteString("`")
+					stmt.WriteString(v.key)
+					stmt.WriteString("`='")
+					stmt.WriteString(value)
+					stmt.WriteString("'")
+				} else {
+					stmt.WriteString("`")
+					stmt.WriteString(v.key)
+					stmt.WriteString("`=")
+					stmt.WriteString(interfaceToString(v.value))
+				}
 			} else {
-				stmt.WriteString(", `")
-				stmt.WriteString(v.key)
-				stmt.WriteString("`=")
-				stmt.WriteString(v.value)
+				if ok == true {
+					stmt.WriteString(", `")
+					stmt.WriteString(v.key)
+					stmt.WriteString("`='")
+					stmt.WriteString(value)
+					stmt.WriteString("'")
+				} else {
+					stmt.WriteString(", `")
+					stmt.WriteString(v.key)
+					stmt.WriteString("`=")
+					stmt.WriteString(interfaceToString(v.value))
+				}
 			}
 		} else {
 			if k == 0 {
@@ -234,7 +269,7 @@ func (sess *Session) buildSelect(final bool) string {
 	// ------------------ 拼接column部分 ----------------------------
 	// 如果没有用Column()指定field也没有用ColumnRaw()指定过字段
 	var field keyString
-	if len(sess.stmt.field) == 0 && len(sess.stmt.extraField) == 0 {
+	if len(sess.stmt.field) == 0 {
 		//把模型里所有的字段及其值写入到allField里
 		for _, v := range sess.modelInfo.fields {
 			field.key = v.SQLName
@@ -259,30 +294,24 @@ func (sess *Session) buildSelect(final bool) string {
 		}
 	}
 
-	//把额外添加的字段也汇总到allField
-	for _, v := range sess.stmt.extraField {
-		field.key = v.key
-		field.value = interfaceToString(v.value)
-		allField = append(allField, field)
-		sess.stmt.field = append(sess.stmt.field, &keyInterface{
-			key:   field.key,
-			value: field.value,
-		})
-	}
-
 	// 拼接column部分
 	for k, v := range allField {
 		if k == 0 {
 			if v.value == "" {
+				stmt.WriteString("`")
 				stmt.WriteString(v.key)
+				stmt.WriteString("`")
 			} else {
+				stmt.WriteString("`")
 				stmt.WriteString(v.key)
 				stmt.WriteString("`")
 			}
 		} else {
 			if v.value == "" {
 				stmt.WriteString(", ")
+				stmt.WriteString("`")
 				stmt.WriteString(v.key)
+				stmt.WriteString("`")
 			} else {
 				stmt.WriteString(", `")
 				stmt.WriteString(v.key)
@@ -301,6 +330,9 @@ func (sess *Session) buildSelect(final bool) string {
 
 //构建where语句
 func (sess *Session) buildWhere(final bool) string {
+	if sess.err != nil {
+		return ""
+	}
 	whereCount := len(sess.stmt.where)
 	if whereCount == 0 {
 		return ""
@@ -309,21 +341,37 @@ func (sess *Session) buildWhere(final bool) string {
 	stmt.WriteString(" WHERE ")
 
 	//遍历where条件
-	var value string
+	var value bytes.Buffer
 	for i := 0; i < whereCount; i++ {
-		value = ""
+		value.Reset()
 		//如果是IN或NOT IN
 		if sess.stmt.where[i].operator == "IN" || sess.stmt.where[i].operator == "NOT IN" {
 			if final == true {
 				tmpValues := sliceToString(sess.stmt.where[i].value)
-				value += strings.Join(tmpValues, ", ")
+				values, ok := sess.stmt.where[i].value.([]string)
+				if ok == true {
+					for k, v := range values {
+						if k == 0 {
+							value.WriteString("`")
+							value.WriteString(v)
+							value.WriteString("`")
+						} else {
+							value.WriteString(", `")
+							value.WriteString(v)
+							value.WriteString("`")
+						}
+					}
+				} else {
+					value.WriteString(strings.Join(tmpValues, ", "))
+				}
+
 				if i == 0 {
 					stmt.WriteString("(`")
 					stmt.WriteString(sess.stmt.where[i].field)
 					stmt.WriteString("` ")
 					stmt.WriteString(sess.stmt.where[i].operator)
 					stmt.WriteString(" (")
-					stmt.WriteString(value)
+					stmt.WriteString(value.String())
 					stmt.WriteString("))")
 				} else {
 					stmt.WriteString(" ")
@@ -333,7 +381,7 @@ func (sess *Session) buildWhere(final bool) string {
 					stmt.WriteString("` ")
 					stmt.WriteString(sess.stmt.where[i].operator)
 					stmt.WriteString(" (")
-					stmt.WriteString(value)
+					stmt.WriteString(value.String())
 					stmt.WriteString("))")
 				}
 			} else {
@@ -365,14 +413,21 @@ func (sess *Session) buildWhere(final bool) string {
 			}
 		} else {
 			if final == true {
-				value = interfaceToString(sess.stmt.where[i].value)
+				value.WriteString(interfaceToString(sess.stmt.where[i].value))
+				_, ok := sess.stmt.where[i].value.(string)
 				if i == 0 {
 					stmt.WriteString("(`")
 					stmt.WriteString(sess.stmt.where[i].field)
 					stmt.WriteString("`")
 					stmt.WriteString(sess.stmt.where[i].operator)
-					stmt.WriteString(value)
-					stmt.WriteString(")")
+					if ok == true {
+						stmt.WriteString("'")
+						stmt.WriteString(value.String())
+						stmt.WriteString("')")
+					} else {
+						stmt.WriteString(value.String())
+						stmt.WriteString(")")
+					}
 				} else {
 					stmt.WriteString(" ")
 					stmt.WriteString(sess.stmt.where[i].union)
@@ -380,8 +435,9 @@ func (sess *Session) buildWhere(final bool) string {
 					stmt.WriteString(sess.stmt.where[i].field)
 					stmt.WriteString("`")
 					stmt.WriteString(sess.stmt.where[i].operator)
-					stmt.WriteString(value)
-					stmt.WriteString(")")
+					stmt.WriteString("'")
+					stmt.WriteString(value.String())
+					stmt.WriteString("')")
 				}
 			} else {
 				if i == 0 {
@@ -408,6 +464,9 @@ func (sess *Session) buildWhere(final bool) string {
 
 //构建ORDER BY语句
 func (sess *Session) buildOrderBy() string {
+	if sess.err != nil {
+		return ""
+	}
 	len := len(sess.stmt.orders)
 	if len == 0 {
 		return ""
@@ -433,6 +492,9 @@ func (sess *Session) buildOrderBy() string {
 
 //构建LIMIT语句
 func (sess *Session) buildLimit() string {
+	if sess.err != nil {
+		return ""
+	}
 	var stmt bytes.Buffer
 	if sess.stmt.limit > 0 {
 		stmt.WriteString(" LIMIT ")
@@ -443,6 +505,9 @@ func (sess *Session) buildLimit() string {
 
 //构建拼接OFFSET语句
 func (sess *Session) buildOffset() string {
+	if sess.err != nil {
+		return ""
+	}
 	var stmt bytes.Buffer
 	if sess.stmt.offset > 0 {
 		stmt.WriteString(" OFFSET ")

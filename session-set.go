@@ -17,6 +17,9 @@ func (sess *Session) Table(tableName string) *Session {
 // UPDATE：只更新哪些字段
 // SELECT：只返回哪些字段
 func (sess *Session) Column(fields ...string) *Session {
+	if sess.stmt.action == "DELETE" {
+		return sess
+	}
 	for _, v := range fields {
 		var field keyInterface
 		field.key = v
@@ -25,16 +28,17 @@ func (sess *Session) Column(fields ...string) *Session {
 	return sess
 }
 
-// ColumnRaw 用原生SQL语句设置要影响的字段，用于对Column()方法的补充
-// 主要用于影响模型没有定义的额外字段及其值，或者执行数据库函数
-// 如果不传入value参数，会被当作MySQL的函数来看待，不会为字段名加上引号
-func (sess *Session) ColumnRaw(fieldName string, value ...interface{}) *Session {
+// AddValue 用于在Insert和Update操作时，添加模型中没有定义的字段及其值
+func (sess *Session) AddValue(fieldName string, value ...interface{}) *Session {
+	if sess.stmt.action != "UPDATE" && sess.stmt.action != "INSERT" {
+		return sess
+	}
 	var field keyInterface
 	field.key = fieldName
 	if len(value) > 0 {
 		field.value = value[0]
 	}
-	sess.stmt.extraField = append(sess.stmt.extraField, &field)
+	sess.stmt.addValue = append(sess.stmt.addValue, &field)
 	return sess
 }
 
@@ -133,6 +137,9 @@ func (sess *Session) Limit(value int) *Session {
 
 //Offset 游标偏移数量
 func (sess *Session) Offset(value int) *Session {
+	if sess.stmt.action != "SELECT" {
+		return sess
+	}
 	sess.stmt.offset = value
 	return sess
 }

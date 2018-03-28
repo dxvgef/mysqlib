@@ -7,26 +7,10 @@ import (
 
 //过滤SQL敏感字符
 func filterSQL(v string) string {
-	// 判断 "
-	n := strings.Count(v, "\"")
-	if n%2 != 0 {
-		v = strings.Replace(v, "\"", "\"\"", 1)
-	}
-	// 判断 '
-	n = strings.Count(v, "'")
-	if n%2 != 0 {
-		v = strings.Replace(v, "'", "''", 1)
-	}
-	// 判断 `
-	n = strings.Count(v, "`")
-	if n%2 != 0 {
-		v = strings.Replace(v, "`", "``", 1)
-	}
 	// 判断 \
 	v = strings.Replace(v, "\\", "\\\\", -1)
-	// 判断 --
-	v = strings.Replace(v, "--", "---", -1)
-
+	// 转意 ‘
+	v = strings.Replace(v, "'", "\\'", -1)
 	return v
 }
 
@@ -53,7 +37,7 @@ func interfaceToString(v interface{}) string {
 	case bool:
 		value = strconv.FormatBool(v.(bool))
 	default:
-		value = "[!mysqlib!]"
+		value = "[!empty!]"
 	}
 
 	return value
