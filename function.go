@@ -7,6 +7,22 @@ import (
 
 //过滤SQL敏感字符
 func filterSQL(v string) string {
+	// 判断 \b
+	v = strings.Replace(v, "\b", "\\b", -1)
+	// 判断 \r
+	v = strings.Replace(v, "\r", "\\r", -1)
+	// 判断 \n
+	v = strings.Replace(v, "\n", "\\n", -1)
+	// 判断 \x1a
+	v = strings.Replace(v, "\x1a", "\\x1a", -1)
+	// 判断 \x00
+	v = strings.Replace(v, "\x00", "\\x00", -1)
+	// 判断 _
+	// v = strings.Replace(v, "_", "\\_", -1)
+	// 判断 %
+	v = strings.Replace(v, "%", "\\%", -1)
+	// 判断 "
+	// 判断 <>&*;
 	// 判断 \
 	v = strings.Replace(v, "\\", "\\\\", -1)
 	// 转意 ‘
